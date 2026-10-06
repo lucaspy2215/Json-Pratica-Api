@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Painel do Brasil | Projeto de estudo do Lucas</title>
+    <meta name="description"
+        content="Projeto de estudo: câmbio e território do Brasil com APIs públicas que se comunicam, usando JavaScript e JSON." />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="design/tailwind.config.js"></script>
+</head>
+
+<body class="bg-fundo font-sans leading-relaxed text-texto">
+
+    <!-- Topo -->
+    <header class="border-b border-borda bg-gradient-to-br from-blue-500/10 via-transparent to-emerald-500/10 py-16">
+        <div class="mx-auto max-w-5xl px-5">
+            <span class="mb-4 inline-block rounded-full border border-aviso px-3 py-1 text-xs text-aviso">
+                Em aprendizado · projeto de prática
+            </span>
+            <h1 class="mb-3 text-4xl font-bold leading-tight sm:text-5xl">
+                Painel do <span class="text-destaque">Brasil</span>
+            </h1>
+            <p class="mb-6 max-w-2xl text-lg text-suave">
+                Economia e território em dados abertos: um conversor de câmbio com histórico e uma consulta de CEP
+                em que uma API alimenta a outra. Fui eu, o Lucas, quem criou para praticar APIs e JSON.
+            </p>
+            <div class="flex flex-wrap gap-3">
+                <a href="#cambio"
+                    class="rounded-lg bg-destaque px-5 py-2.5 font-semibold text-fundo hover:brightness-110">Ver o
+                    painel</a>
+                <a href="#comunicacao" class="rounded-lg border border-borda bg-cartao px-5 py-2.5 hover:bg-fundo">Como
+                    as APIs se comunicam</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-5xl space-y-14 px-5 pt-12">
+
+        <!-- Como as APIs se comunicam -->
+        <section id="comunicacao">
+            <h2 class="text-2xl font-bold">Como as APIs se comunicam</h2>
+            <p class="mb-5 mt-1 max-w-3xl text-suave">
+                Uma API é um endereço na internet que devolve dados, quase sempre em JSON. O JSON é a "língua comum":
+                qualquer API fala, e o JavaScript entende. Neste projeto aparecem dois jeitos de combinar APIs:
+            </p>
+
+            <div class="grid gap-4 md:grid-cols-2">
+                <div class="rounded-xl border border-borda bg-cartao p-5">
+                    <h3 class="font-semibold">1. Uma resposta, vários usos (Câmbio)</h3>
+                    <p class="mb-3 mt-1 text-sm text-suave">
+                        A AwesomeAPI responde uma vez com todas as cotações. Esse mesmo JSON, guardado na memória,
+                        alimenta
+                        os cards e o conversor, sem novo pedido. O gráfico usa outro endpoint da mesma API (histórico).
+                    </p>
+                    <p class="rounded-lg bg-codigo p-3 font-mono text-xs leading-6 text-codigoTexto">
+                        fetch → JSON das cotações → cards<br />
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→
+                        conversor
+                    </p>
+                </div>
+
+                <div class="rounded-xl border border-borda bg-cartao p-5">
+                    <h3 class="font-semibold">2. Uma API alimenta a outra (Território)</h3>
+                    <p class="mb-3 mt-1 text-sm text-suave">
+                        O ViaCEP devolve o endereço e também o campo <code class="font-mono">ibge</code>, o código
+                        oficial
+                        da cidade. Esse valor vira a entrada da API do IBGE, que devolve região, estado e microrregião.
+                    </p>
+                    <p class="rounded-lg bg-codigo p-3 font-mono text-xs leading-6 text-codigoTexto">
+                        CEP → ViaCEP → JSON { ..., "ibge": "2504009" }<br />
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ API do IBGE (usa esse código) → município
+                    </p>
+                </div>
+            </div>
+
+            <p class="mt-4 max-w-3xl text-sm text-suave">
+                Nos bastidores, o arquivo <code class="font-mono">scripts/api.js</code> é a única porta de saída para a
+                internet:
+                faz o <code class="font-mono">fetch</code>, confere erros e converte com <code
+                    class="font-mono">.json()</code>.
+                O <code class="font-mono">scripts/app.js</code> só recebe objetos prontos e desenha a tela.
+                Abra os itens <em>"Ver a resposta JSON da API"</em> abaixo para ver o que cada API devolveu de verdade.
+            </p>
+        </section>
+
+        <!-- MÓDULO 1: CÂMBIO -->
+        <section id="cambio">
+            <div class="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-destaque">Módulo 1 · Economia</p>
+                    <h2 class="text-2xl font-bold">Câmbio em reais</h2>
+                    <p id="atualizado" class="mt-1 text-sm text-suave">Carregando...</p>
+                </div>
+                <button id="atualizar"
+                    class="rounded-lg border border-borda bg-cartao px-4 py-2 text-sm hover:bg-fundo">Atualizar</button>
+            </div>
+            <p class="mb-4 mt-2 text-suave">
+                Clique em uma moeda para ver o histórico. Use a estrela para favoritar (fica salvo no seu navegador, em
+                JSON).
+            </p>
+
+            <div id="cotacoes" class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4"></div>
+
+            <details class="mt-3 rounded-xl border border-borda bg-cartao p-3 text-sm">
+                <summary class="cursor-pointer font-medium">Ver a resposta JSON da API (cotações atuais)</summary>
+                <p id="url-cotacoes" class="mt-2 break-all font-mono text-xs text-suave"></p>
+                <pre
+                    class="mt-2 max-h-64 overflow-auto rounded-lg bg-codigo p-3 font-mono text-xs text-codigoTexto"><code id="json-cotacoes"></code></pre>
+            </details>
+
+            <div class="mt-5 grid gap-4 lg:grid-cols-3">
+                <!-- Gráfico -->
+                <div class="rounded-xl border border-borda bg-cartao p-5 lg:col-span-2">
+                    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <h3 id="titulo-grafico" class="font-semibold">Histórico</h3>
+                        <div class="flex gap-1.5">
+                            <button data-dias="7" class="rounded-lg border border-borda px-3 py-1 text-sm">7
+                                dias</button>
+                            <button data-dias="30"
+                                class="rounded-lg border border-destaque bg-destaque px-3 py-1 text-sm text-fundo">30
+                                dias</button>
+                            <button data-dias="90" class="rounded-lg border border-borda px-3 py-1 text-sm">90
+                                dias</button>
+                        </div>
+                    </div>
+                    <div id="grafico" class="text-sm text-suave"></div>
+                </div>
+
+                <!-- Conversor -->
+                <div class="rounded-xl border border-borda bg-cartao p-5">
+                    <h3 class="mb-3 font-semibold">Conversor</h3>
+                    <div class="grid gap-2">
+                        <input id="valor" value="100" inputmode="decimal" aria-label="Valor"
+                            class="w-full rounded-lg border border-borda bg-campo px-3 py-2 focus:outline focus:outline-2 focus:outline-destaque" />
+                        <select id="moeda-conv" aria-label="Moeda"
+                            class="w-full rounded-lg border border-borda bg-campo px-3 py-2 focus:outline focus:outline-2 focus:outline-destaque"></select>
+                        <select id="direcao" aria-label="Direção"
+                            class="w-full rounded-lg border border-borda bg-campo px-3 py-2 focus:outline focus:outline-2 focus:outline-destaque">
+                            <option value="para-reais">Moeda → Reais</option>
+                            <option value="de-reais">Reais → Moeda</option>
+                        </select>
+                    </div>
+                    <p id="resultado-conv" class="mt-4 text-lg font-bold text-destaque"></p>
+                    <p id="taxa-conv" class="mt-1 text-xs text-suave"></p>
+                </div>
+            </div>
+
+            <details class="mt-3 rounded-xl border border-borda bg-cartao p-3 text-sm">
+                <summary class="cursor-pointer font-medium">Ver a resposta JSON da API (histórico)</summary>
+                <p id="url-historico" class="mt-2 break-all font-mono text-xs text-suave"></p>
+                <pre
+                    class="mt-2 max-h-64 overflow-auto rounded-lg bg-codigo p-3 font-mono text-xs text-codigoTexto"><code id="json-historico"></code></pre>
+            </details>
+        </section>
+
+        <!-- MÓDULO 2: TERRITÓRIO -->
+        <section id="territorio">
+            <p class="text-xs font-semibold uppercase tracking-wider text-destaque">Módulo 2 · Território</p>
+            <h2 class="text-2xl font-bold">De CEP a município</h2>
+            <p class="mb-4 mt-1 max-w-3xl text-suave">
+                Digite um CEP. O painel consulta o ViaCEP e depois usa o código do IBGE que veio no JSON para consultar
+                a
+                API do IBGE. Acompanhe os passos. Exemplo: 58400-000.
+            </p>
+
+            <form id="form-cep" class="flex flex-wrap gap-2.5">
+                <input id="cep" inputmode="numeric" maxlength="9" placeholder="00000-000" aria-label="CEP"
+                    class="w-full max-w-xs rounded-lg border border-borda bg-campo px-3 py-2 placeholder:text-suave focus:outline focus:outline-2 focus:outline-destaque" />
+                <button
+                    class="rounded-lg bg-destaque px-5 py-2 font-semibold text-fundo hover:brightness-110">Buscar</button>
+            </form>
+
+            <ol id="cadeia" class="mt-4 space-y-2"></ol>
+
+            <div id="resultado-cep" class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"></div>
+            <div id="resultado-ibge" class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+
+            <div class="mt-4 grid gap-3 md:grid-cols-2">
+                <details class="rounded-xl border border-borda bg-cartao p-3 text-sm">
+                    <summary class="cursor-pointer font-medium">JSON do ViaCEP (chamada 1)</summary>
+                    <p id="url-cep" class="mt-2 break-all font-mono text-xs text-suave"></p>
+                    <pre
+                        class="mt-2 max-h-64 overflow-auto rounded-lg bg-codigo p-3 font-mono text-xs text-codigoTexto"><code id="json-cep"></code></pre>
+                </details>
+                <details class="rounded-xl border border-borda bg-cartao p-3 text-sm">
+                    <summary class="cursor-pointer font-medium">JSON do IBGE (chamada 2)</summary>
+                    <p id="url-ibge" class="mt-2 break-all font-mono text-xs text-suave"></p>
+                    <pre
+                        class="mt-2 max-h-64 overflow-auto rounded-lg bg-codigo p-3 font-mono text-xs text-codigoTexto"><code id="json-ibge"></code></pre>
+                </details>
+            </div>
+        </section>
+
+        <!-- O que pratiquei -->
+        <section>
+            <h2 class="text-2xl font-bold">O que estou praticando</h2>
+            <div class="mt-4 flex flex-wrap gap-2">
+                <span class="rounded-full border border-borda bg-cartao px-3.5 py-1.5 text-sm">Consumo de APIs
+                    REST</span>
+                <span class="rounded-full border border-borda bg-cartao px-3.5 py-1.5 text-sm">Encadear APIs</span>
+                <span class="rounded-full border border-borda bg-cartao px-3.5 py-1.5 text-sm">fetch e
+                    async/await</span>
+                <span class="rounded-full border border-borda bg-cartao px-3.5 py-1.5 text-sm">JSON aninhado</span>
+                <span class="rounded-full border border-borda bg-cartao px-3.5 py-1.5 text-sm">Tratamento de
+                    erros</span>
+                <span class="rounded-full border border-borda bg-cartao px-3.5 py-1.5 text-sm">Gráfico em SVG</span>
+                <span class="rounded-full border border-borda bg-cartao px-3.5 py-1.5 text-sm">localStorage</span>
+                <span class="rounded-full border border-borda bg-cartao px-3.5 py-1.5 text-sm">Módulos ES</span>
+                <span class="rounded-full border border-borda bg-cartao px-3.5 py-1.5 text-sm">Tailwind CSS</span>
+            </div>
+        </section>
+    </main>
+
+    <!-- Assinatura -->
+    <footer class="mt-16 border-t border-borda bg-cartao py-9">
+        <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-5 px-5">
+            <div>
+                <strong class="text-lg">Feito por Lucas Rocha</strong>
+                <p class="mt-1 max-w-lg text-sm text-suave">
+                    Estudante de Análise e Desenvolvimento de Sistemas, praticando JSON e APIs.
+                    Este projeto faz parte do meu aprendizado, então feedbacks são bem-vindos!
+                </p>
+            </div>
+            <div class="flex gap-2.5">
+                <a href="https://github.com/lucaspy2215" target="_blank" rel="noopener"
+                    class="rounded-lg border border-borda bg-fundo px-4 py-2 transition-shadow motion-reduce:transition-none hover:shadow-[0_6px_24px_rgba(88,166,255,0.35)]">GitHub</a>
+                <a href="https://www.linkedin.com/in/lucas-rocha-de-farias-88b837364" target="_blank" rel="noopener"
+                    class="rounded-lg border border-borda bg-fundo px-4 py-2 transition-shadow motion-reduce:transition-none hover:shadow-[0_6px_24px_rgba(88,166,255,0.35)]">LinkedIn</a>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="scripts/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,6 @@
+[
+  { "par": "USD-BRL", "nome": "Dólar americano" },
+  { "par": "EUR-BRL", "nome": "Euro" },
+  { "par": "GBP-BRL", "nome": "Libra esterlina" },
+  { "par": "BTC-BRL", "nome": "Bitcoin" }
+]
